@@ -54,16 +54,9 @@ When you run `dotnet restore`, the following test packages are automatically ins
 
 ### Running Tests
 
-Run all tests
-	dotnet test
+Run all tests 
+	- dotnet test
 
-Run tests with verbose output
-	dotnet test --verbosity detailed
+Run tests with verbose output 
+	 - dotnet test --verbosity detailed
 
-
-### Installs for Testing:
-Terminal
-	inside /tests folder:
-		dotnet add package xunit
-		dotnet add package xunit.runner.visualstudio
-		dotnet add package Microsoft.EntityFrameworkCore.InMemorycd  --version 10.0.0
