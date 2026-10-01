@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="RentalPropertyManager.csproj" />
+  <Project Path="..\\RentalPropertyManager.Tests\\RentalPropertyManager.Tests.csproj" />
+</Solution>
