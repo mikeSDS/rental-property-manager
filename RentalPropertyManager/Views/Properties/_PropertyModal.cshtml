@@ -8,7 +8,7 @@
                 <h5 class="modal-title">@(Model?.Id.HasValue == true ? "Edit Property" : "Create Property")</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="propertyForm">
+            <form id="propertyForm" data-is-edit="@(Model?.Id.HasValue == true ? "true" : "false")" data-property-id="@(Model?.Id ?? 0)">
                 <div class="modal-body">
                     @if (Model?.Id.HasValue == true)
                     {
@@ -60,19 +60,4 @@
         </div>
     </div>
 </div>
-
-<script src="~/js/property-modal.js"></script>
-<script>
-    // Set form data attributes for modal handling
-    const form = document.getElementById("propertyForm");
-    if (form) {
-        form.dataset.isEdit = @(Model?.Id.HasValue == true ? "true" : "false");
-        form.dataset.propertyId = @(Model?.Id ?? 0);
-    }
-
-    // Initialize the form handler
-    if (typeof initializePropertyForm === "function") {
-        initializePropertyForm();
-    }
-</script>
 
