@@ -1,0 +1,38 @@
+@model RentalPropertyManager.ViewModels.Applications.ApplicationWizardViewModel
+
+<h4 class="mb-3">Review &amp; Submit</h4>
+
+<div class="card mb-4">
+    <div class="card-header">Unit</div>
+    <div class="card-body">
+        <p class="mb-0">@Model.PropertyName - Unit @Model.UnitNumber &middot; @Model.MonthlyRent.ToString("C")/month</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Applicant Information</div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9"><span>@Model.ApplicantInfo.Name</span></dd>
+            <dt class="col-sm-3">Phone</dt>
+            <dd class="col-sm-9"><span>@Model.ApplicantInfo.Phone</span></dd>
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9"><span>@Model.ApplicantInfo.Email</span></dd>
+            <dt class="col-sm-3">Current Address</dt>
+            <dd class="col-sm-9"><span>@Model.ApplicantInfo.CurrentAddress</span></dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Residence History</div>
+    <div class="card-body">
+        <partial name="Partials/_ResidenceTable" model="Model" />
+    </div>
+</div>
+
+@if (!Model.IsReadOnly)
+{
+    <button type="submit" name="buttonAction" value="Submit" class="btn btn-success btn-lg">Submit Application</button>
+}

@@ -1,0 +1,40 @@
+@model RentalPropertyManager.ViewModels.Applications.ApplicationWizardViewModel
+
+<h4 class="mb-3">Applicant Information</h4>
+
+@if (Model.IsReadOnly)
+{
+    <dl class="row">
+        <dt class="col-sm-3">Name</dt>
+        <dd class="col-sm-9"><span>@Model.ApplicantInfo.Name</span></dd>
+        <dt class="col-sm-3">Phone</dt>
+        <dd class="col-sm-9"><span>@Model.ApplicantInfo.Phone</span></dd>
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9"><span>@Model.ApplicantInfo.Email</span></dd>
+        <dt class="col-sm-3">Current Address</dt>
+        <dd class="col-sm-9"><span>@Model.ApplicantInfo.CurrentAddress</span></dd>
+    </dl>
+}
+else
+{
+    <div class="mb-3">
+        <label asp-for="ApplicantInfo.Name" class="form-label"></label>
+        <input asp-for="ApplicantInfo.Name" class="form-control" />
+        <span asp-validation-for="ApplicantInfo.Name" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ApplicantInfo.Phone" class="form-label"></label>
+        <input asp-for="ApplicantInfo.Phone" class="form-control" />
+        <span asp-validation-for="ApplicantInfo.Phone" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ApplicantInfo.Email" class="form-label"></label>
+        <input asp-for="ApplicantInfo.Email" class="form-control" />
+        <span asp-validation-for="ApplicantInfo.Email" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ApplicantInfo.CurrentAddress" class="form-label"></label>
+        <input asp-for="ApplicantInfo.CurrentAddress" class="form-control" />
+        <span asp-validation-for="ApplicantInfo.CurrentAddress" class="text-danger"></span>
+    </div>
+}

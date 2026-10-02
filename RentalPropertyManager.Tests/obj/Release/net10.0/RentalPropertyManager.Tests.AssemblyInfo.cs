@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RentalPropertyManager.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0d53b12d3cc1e30d67ae602aabe84171eb55a244")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c0b0490e21d0b5e777018cca0b20bf639d50e19d")]
 [assembly: System.Reflection.AssemblyProductAttribute("RentalPropertyManager.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RentalPropertyManager.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

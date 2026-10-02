@@ -178,7 +178,86 @@ namespace RentalPropertyManager.Data
                          dbContext.Units.AddRange(unitsToCreate);
                          await dbContext.SaveChangesAsync();
                      }
+
+                // Seed ApplicationStatuses, Applications, Applicants and ResidenceHistories
+                await SeedApplicationDataAsync(dbContext, userManager);
             }
+        }
+
+        private static async Task SeedApplicationDataAsync(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager)
+        {
+            // Seed ApplicationStatus lookups if table is empty
+            if (!await dbContext.ApplicationStatuses.AnyAsync())
+            {
+                dbContext.ApplicationStatuses.AddRange(
+                    ApplicationStatus.AllNames.Select(name => new ApplicationStatus { Name = name }));
+                await dbContext.SaveChangesAsync();
+            }
+
+            // Seed one application in every status if Applications table is empty
+            if (await dbContext.Applications.AnyAsync())
+            {
+                return;
+            }
+
+            var applicantUser = await userManager.FindByEmailAsync("applicant@realestate.com");
+            var units = await dbContext.Units.OrderBy(u => u.Id).ToListAsync();
+            if (applicantUser == null || units.Count == 0)
+            {
+                return;
+            }
+
+            var statuses = await dbContext.ApplicationStatuses.ToDictionaryAsync(s => s.Name);
+
+            var applicantFaker = new Faker<Applicant>()
+                .RuleFor(a => a.Name, f => f.Name.FullName())
+                .RuleFor(a => a.Phone, f => f.Phone.PhoneNumber("###-###-####"))
+                .RuleFor(a => a.Email, f => f.Internet.Email())
+                .RuleFor(a => a.CurrentAddress, f => $"{f.Address.StreetAddress()}, {f.Address.City()}, {f.Address.StateAbbr()} {f.Address.ZipCode("#####")}");
+
+            var residenceFaker = new Faker<ResidenceHistory>()
+                .RuleFor(r => r.Street, f => f.Address.StreetAddress())
+                .RuleFor(r => r.City, f => f.Address.City())
+                .RuleFor(r => r.State, f => f.Address.StateAbbr())
+                .RuleFor(r => r.Zip, f => f.Address.ZipCode("#####"))
+                .RuleFor(r => r.LandlordName, f => f.Name.FullName())
+                .RuleFor(r => r.LandlordPhone, f => f.Phone.PhoneNumber("###-###-####"));
+
+            var random = new Random();
+            var index = 0;
+
+            foreach (var statusName in ApplicationStatus.AllNames)
+            {
+                var application = new Application
+                {
+                    UnitID = units[index % units.Count].Id,
+                    ApplicantUserID = applicantUser.Id,
+                    Date = DateTime.UtcNow.AddDays(-random.Next(1, 60)),
+                    ApplicationStatusID = statuses[statusName].Id
+                };
+                index++;
+
+                var applicant = applicantFaker.Generate();
+                applicant.UserID = applicantUser.Id;
+                var link = new ApplicationApplicant { Applicant = applicant, IsPrimary = true };
+                application.ApplicationApplicants.Add(link);
+
+                // Older, completed residence followed by the current residence (no move-out date)
+                var previousMoveIn = DateTime.UtcNow.Date.AddYears(-random.Next(3, 6));
+                var previous = residenceFaker.Generate();
+                previous.MoveInDate = previousMoveIn;
+                previous.MoveOutDate = previousMoveIn.AddMonths(random.Next(12, 24));
+                link.ResidenceHistories.Add(previous);
+
+                var current = residenceFaker.Generate();
+                current.MoveInDate = previous.MoveOutDate.Value.AddDays(random.Next(0, 30));
+                current.MoveOutDate = null;
+                link.ResidenceHistories.Add(current);
+
+                dbContext.Applications.Add(application);
+            }
+
+            await dbContext.SaveChangesAsync();
         }
     }
 }

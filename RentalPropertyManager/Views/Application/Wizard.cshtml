@@ -1,0 +1,27 @@
+@model RentalPropertyManager.ViewModels.Applications.ApplicationWizardViewModel
+@{
+    ViewData["Title"] = "Rental Application";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-3">
+        <div class="col">
+            <h1>Rental Application</h1>
+            <p class="text-muted mb-0">
+                @Model.PropertyName - Unit @Model.UnitNumber &middot; @Model.MonthlyRent.ToString("C")/month
+                &middot; Status: <span class="badge bg-secondary" id="applicationStatusBadge">@Model.StatusName</span>
+            </p>
+        </div>
+    </div>
+
+    <div id="wizardContainer">
+        <partial name="Partials/_WizardContent" model="Model" />
+    </div>
+</div>
+
+<!-- Residence modal is injected here by application-wizard.js -->
+<div id="residenceModalContainer"></div>
+
+@section Scripts {
+    <script src="~/js/application-wizard.js" asp-append-version="true"></script>
+}

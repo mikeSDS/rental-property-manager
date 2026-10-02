@@ -73,9 +73,9 @@
             }
         }
 
-        // Apply for unit (placeholder - will be implemented in future version)
+        // Apply for unit: starts (or resumes) a draft application and opens the wizard
         function applyForUnit(unitId) {
-            alert(`Application for unit ${unitId} coming soon!`);
+            window.location.href = `/Application/Create?unitId=${unitId}`;
         }
 
         function escapeHtml(text) {

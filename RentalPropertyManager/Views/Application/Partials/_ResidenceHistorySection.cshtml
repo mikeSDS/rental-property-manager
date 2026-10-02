@@ -1,0 +1,15 @@
+@model RentalPropertyManager.ViewModels.Applications.ApplicationWizardViewModel
+
+<h4 class="mb-3">Residence History</h4>
+<p class="text-muted">List your prior residences, including your current address if applicable.</p>
+
+@if (!Model.IsReadOnly)
+{
+    <div class="mb-3">
+        <button type="button" class="btn btn-success" data-action="add-residence" data-application-id="@Model.ApplicationID">Add Residence</button>
+    </div>
+}
+
+<div id="residenceTableContainer" data-application-id="@Model.ApplicationID">
+    <partial name="Partials/_ResidenceTable" model="Model" />
+</div>

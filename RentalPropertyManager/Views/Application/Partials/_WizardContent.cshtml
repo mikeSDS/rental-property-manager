@@ -1,0 +1,63 @@
+@model RentalPropertyManager.ViewModels.Applications.ApplicationWizardViewModel
+@{
+    string StepClass(int step) => Model.CurrentStep == step ? "btn btn-primary" : Model.CurrentStep > step ? "btn btn-success" : "btn btn-outline-secondary";
+}
+
+<div class="mb-4 d-flex gap-2 flex-wrap" aria-label="Application progress">
+    <span class="@StepClass(1) disabled">Step 1: Applicant Information</span>
+    <span class="@StepClass(2) disabled">Step 2: Residence History</span>
+    <span class="@StepClass(3) disabled">Step 3: Summary</span>
+</div>
+
+<form id="wizardForm" method="post" asp-controller="Application" asp-action="Wizard" asp-route-id="@Model.ApplicationID" data-status-name="@Model.StatusName">
+    <input type="hidden" name="CurrentStep" value="@Model.CurrentStep" />
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-info">This application is <strong>@Model.StatusName</strong> and can no longer be edited.</div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    @switch (Model.CurrentStep)
+    {
+        case 1:
+            <partial name="Partials/_ApplicantInfoSection" model="Model" />
+            break;
+        case 2:
+            <partial name="Partials/_ResidenceHistorySection" model="Model" />
+            break;
+        default:
+            <partial name="Partials/_SummarySection" model="Model" />
+            break;
+    }
+
+    <div class="d-flex justify-content-between mt-4">
+        <div>
+            @if (Model.CurrentStep > 1)
+            {
+                if (Model.IsReadOnly)
+                {
+                    <a class="btn btn-outline-secondary" href="@Url.Action("Wizard", "Application", new { id = Model.ApplicationID, step = Model.CurrentStep - 1 })">Back</a>
+                }
+                else
+                {
+                    <button type="submit" name="buttonAction" value="Back" class="btn btn-outline-secondary" formnovalidate>Back</button>
+                }
+            }
+        </div>
+        <div>
+            @if (Model.CurrentStep < 3)
+            {
+                if (Model.IsReadOnly)
+                {
+                    <a class="btn btn-primary" href="@Url.Action("Wizard", "Application", new { id = Model.ApplicationID, step = Model.CurrentStep + 1 })">Next</a>
+                }
+                else
+                {
+                    <button type="submit" name="buttonAction" value="Continue" class="btn btn-primary">Continue</button>
+                }
+            }
+        </div>
+    </div>
+</form>

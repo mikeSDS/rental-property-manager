@@ -1,0 +1,47 @@
+@model RentalPropertyManager.ViewModels.Applications.ApplicationWizardViewModel
+@{
+    var showActions = !Model.IsReadOnly && Model.CurrentStep == 2;
+}
+
+<table class="table table-striped table-hover" id="residenceTable">
+    <thead class="table-dark">
+        <tr>
+            <th>Address</th>
+            <th>Landlord</th>
+            <th>Landlord Phone</th>
+            <th>Move-In</th>
+            <th>Move-Out</th>
+            @if (showActions)
+            {
+                <th class="text-end">Actions</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Residences.Any())
+        {
+            <tr>
+                <td colspan="@(showActions ? 6 : 5)" class="text-center text-muted py-3">No residences have been added.</td>
+            </tr>
+        }
+        @foreach (var residence in Model.Residences)
+        {
+            <tr>
+                <td>@residence.Street, @residence.City, @residence.State @residence.Zip</td>
+                <td>@residence.LandlordName</td>
+                <td>@residence.LandlordPhone</td>
+                <td>@residence.MoveInDate.ToString("MM/dd/yyyy")</td>
+                <td>@(residence.MoveOutDate.HasValue ? residence.MoveOutDate.Value.ToString("MM/dd/yyyy") : "Present")</td>
+                @if (showActions)
+                {
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-warning" data-action="edit-residence"
+                                data-application-id="@Model.ApplicationID" data-residence-id="@residence.ResidenceID">Edit</button>
+                        <button type="button" class="btn btn-sm btn-danger" data-action="delete-residence"
+                                data-residence-id="@residence.ResidenceID">Delete</button>
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
