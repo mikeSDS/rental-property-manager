@@ -1,7 +1,12 @@
+DELETE FROM ActionHistories;
+DELETE FROM Reviews;
+DELETE FROM Leases;
 DELETE FROM ResidenceHistories;
+DELETE FROM ApplicationApplicants;
 DELETE FROM Applicants;
 DELETE FROM Applications;
 DELETE FROM ApplicationStatuses;
+DELETE FROM ActionTypes;
 DELETE FROM Units;
 DELETE FROM Properties;
 DELETE FROM UnitTypes;

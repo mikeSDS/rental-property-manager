@@ -20,6 +20,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<RentalPropertyManager.Services.IAuditService, RentalPropertyManager.Services.AuditService>();
 
 // Configure anti-forgery for JSON requests
 builder.Services.AddAntiforgery(options =>

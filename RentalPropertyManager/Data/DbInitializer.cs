@@ -212,9 +212,19 @@ namespace RentalPropertyManager.Data
                 }
             }
 
+            // Seed any missing ActionType lookups (idempotent per name)
+            var existingActionNames = await dbContext.ActionTypes.Select(a => a.Name).ToListAsync();
+            var missingActions = ActionType.AllNames.Except(existingActionNames).ToList();
+            if (missingActions.Count > 0)
+            {
+                dbContext.ActionTypes.AddRange(missingActions.Select(n => new ActionType { Name = n }));
+                await dbContext.SaveChangesAsync();
+            }
+
             // Seed one application in every status if Applications table is empty
             if (await dbContext.Applications.AnyAsync())
             {
+                await SeedReviewAndHistoryAsync(dbContext, userManager);
                 return;
             }
 
@@ -273,6 +283,104 @@ namespace RentalPropertyManager.Data
                 link.ResidenceHistories.Add(current);
 
                 dbContext.Applications.Add(application);
+            }
+
+            await dbContext.SaveChangesAsync();
+            await SeedReviewAndHistoryAsync(dbContext, userManager);
+        }
+
+        private static async Task SeedReviewAndHistoryAsync(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager)
+        {
+            if (await dbContext.ActionHistories.AnyAsync() || await dbContext.Reviews.AnyAsync())
+            {
+                return;
+            }
+
+            var manager = await userManager.FindByEmailAsync("manager@realestate.com");
+            if (manager == null)
+            {
+                return;
+            }
+
+            var actionTypes = await dbContext.ActionTypes.ToDictionaryAsync(a => a.Name);
+            var applications = await dbContext.Applications
+                .Include(a => a.Status)
+                .Include(a => a.PropertyUnit)
+                .ToListAsync();
+            var statuses = await dbContext.ApplicationStatuses.ToDictionaryAsync(s => s.Name);
+            var faker = new Faker();
+
+            foreach (var app in applications)
+            {
+                var name = app.Status.Name;
+                var submittedAt = app.Date;
+
+                if (name != ApplicationStatus.Draft)
+                {
+                    dbContext.ActionHistories.Add(new ActionHistory
+                    {
+                        ActionTypeID = actionTypes[ActionType.Submission].Id,
+                        UserID = app.ApplicantUserID,
+                        Date = submittedAt,
+                        ApplicationID = app.Id,
+                        FromStatus = ApplicationStatus.Draft,
+                        ToStatus = ApplicationStatus.Submitted
+                    });
+                }
+
+                if (name == ApplicationStatus.Withdrawn)
+                {
+                    dbContext.ActionHistories.Add(new ActionHistory
+                    {
+                        ActionTypeID = actionTypes[ActionType.Withdraw].Id,
+                        UserID = app.ApplicantUserID,
+                        Date = submittedAt.AddDays(1),
+                        ApplicationID = app.Id,
+                        FromStatus = ApplicationStatus.Submitted,
+                        ToStatus = ApplicationStatus.Withdrawn
+                    });
+                }
+                else if (name == ApplicationStatus.Approved || name == ApplicationStatus.Returned || name == ApplicationStatus.Denied)
+                {
+                    var actionName = name == ApplicationStatus.Approved ? ActionType.Approve
+                        : name == ApplicationStatus.Returned ? ActionType.Return
+                        : ActionType.Deny;
+                    var reviewDate = submittedAt.AddDays(2);
+                    string? comment = name == ApplicationStatus.Approved ? null : faker.Lorem.Sentence();
+
+                    dbContext.Reviews.Add(new Review
+                    {
+                        ApplicationID = app.Id,
+                        UserID = manager.Id,
+                        ReviewDate = reviewDate,
+                        OutcomeApplicationStatusID = statuses[name].Id,
+                        Comment = comment
+                    });
+                    dbContext.ActionHistories.Add(new ActionHistory
+                    {
+                        ActionTypeID = actionTypes[actionName].Id,
+                        UserID = manager.Id,
+                        Date = reviewDate,
+                        ApplicationID = app.Id,
+                        FromStatus = ApplicationStatus.Submitted,
+                        ToStatus = name
+                    });
+
+                    var unitHasLease = await dbContext.Leases.AnyAsync(l => l.UnitID == app.UnitID);
+                    if (name == ApplicationStatus.Approved && !unitHasLease)
+                    {
+                        var start = reviewDate.Date;
+                        dbContext.Leases.Add(new Lease
+                        {
+                            UnitID = app.UnitID,
+                            ApplicationID = app.Id,
+                            StartDate = start,
+                            EndDate = start.AddMonths(12),
+                            MonthlyRent = app.PropertyUnit.MonthlyRent,
+                            CreatedAt = reviewDate
+                        });
+                    }
+                }
             }
 
             await dbContext.SaveChangesAsync();

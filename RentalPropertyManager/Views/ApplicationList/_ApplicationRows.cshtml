@@ -28,6 +28,14 @@ else
                     <td>@item.PrimaryApplicantName</td>
                     <td><span class="badge @ApplicationStatus.BadgeCssClass(item.StatusName)">@item.StatusName</span></td>
                     <td class="text-end">
+                        @if (User.IsInRole("PropertyManager"))
+                        {
+                            <a class="btn btn-sm btn-outline-secondary" asp-controller="Review" asp-action="Details" asp-route-id="@item.Id">Details</a>
+                            @if (item.StatusName == ApplicationStatus.Submitted || item.StatusName == ApplicationStatus.UnderReview)
+                            {
+                                <button type="button" class="btn btn-sm btn-primary" data-review-app-id="@item.Id">Review</button>
+                            }
+                        }
                         @if (User.IsInRole("Applicant"))
                         {
                             <a class="btn btn-sm btn-outline-primary" asp-controller="Application" asp-action="Wizard" asp-route-id="@item.Id">

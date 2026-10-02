@@ -1,0 +1,50 @@
+@model RentalPropertyManager.ViewModels.Review.ReviewModalViewModel
+
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-controller="Review" asp-action="CompleteReview" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ApplicationID" />
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reviewModalLabel">Review Application #@Model.ApplicationID</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row mb-3">
+                        <dt class="col-sm-4">Applicant</dt>
+                        <dd class="col-sm-8">@Model.ApplicantName</dd>
+                        <dt class="col-sm-4">Property</dt>
+                        <dd class="col-sm-8">@Model.PropertyName</dd>
+                        <dt class="col-sm-4">Unit</dt>
+                        <dd class="col-sm-8">@Model.UnitNumber</dd>
+                        <dt class="col-sm-4">Monthly Rent</dt>
+                        <dd class="col-sm-8">@Model.MonthlyRent.ToString("C")</dd>
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">@Model.CurrentStatusName</dd>
+                    </dl>
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="OutcomeStatusID" class="form-label">Outcome</label>
+                        <select asp-for="OutcomeStatusID" asp-items="Model.AvailableOutcomes" class="form-select">
+                            <option value="">-- Select outcome --</option>
+                        </select>
+                        <span asp-validation-for="OutcomeStatusID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Comment" class="form-label">Comments</label>
+                        <textarea asp-for="Comment" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="Comment" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

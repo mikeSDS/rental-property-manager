@@ -1,0 +1,37 @@
+@model RentalPropertyManager.ViewModels.Review.ReviewModalViewModel
+@using RentalPropertyManager.Controllers
+@{
+    ViewData["Title"] = "Application Review";
+}
+
+<h1>Application #@Model.ApplicationID</h1>
+
+<dl class="row">
+    <dt class="col-sm-2">Applicant</dt>
+    <dd class="col-sm-10">@Model.ApplicantName</dd>
+    <dt class="col-sm-2">Property</dt>
+    <dd class="col-sm-10">@Model.PropertyName</dd>
+    <dt class="col-sm-2">Unit</dt>
+    <dd class="col-sm-10">@Model.UnitNumber</dd>
+    <dt class="col-sm-2">Monthly Rent</dt>
+    <dd class="col-sm-10">@Model.MonthlyRent.ToString("C")</dd>
+    <dt class="col-sm-2">Status</dt>
+    <dd class="col-sm-10">@Model.CurrentStatusName</dd>
+</dl>
+
+<p>
+    @if (ReviewController.IsReviewable(Model.CurrentStatusName))
+    {
+        <button type="button" class="btn btn-primary" data-review-app-id="@Model.ApplicationID">Review</button>
+    }
+    <a class="btn btn-outline-secondary" asp-controller="ApplicationList" asp-action="Index">Back to Applications</a>
+</p>
+
+<h3>History</h3>
+@await Component.InvokeAsync("StatusHistoryTimeline", new { applicationId = Model.ApplicationID })
+
+<div id="reviewModalContainer"></div>
+
+@section Scripts {
+    <script src="~/js/review-workflow.js"></script>
+}

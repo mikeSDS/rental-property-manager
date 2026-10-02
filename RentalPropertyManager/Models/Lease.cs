@@ -17,6 +17,9 @@ namespace RentalPropertyManager.Models
         /// </summary>
         public decimal MonthlyRent { get; set; }
 
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+
         public Unit PropertyUnit { get; set; } = null!;
 
         public Application? Application { get; set; }

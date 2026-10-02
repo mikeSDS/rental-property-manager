@@ -15,6 +15,9 @@ namespace RentalPropertyManager.Data
         public DbSet<ApplicationApplicant> ApplicationApplicants { get; set; }
         public DbSet<ResidenceHistory> ResidenceHistories { get; set; }
         public DbSet<Lease> Leases { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+        public DbSet<ActionType> ActionTypes { get; set; }
+        public DbSet<ActionHistory> ActionHistories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -115,6 +118,8 @@ namespace RentalPropertyManager.Data
             {
                 entity.Property(l => l.MonthlyRent).HasPrecision(18, 2);
 
+                entity.Property(l => l.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
                 entity.HasOne(l => l.PropertyUnit)
                     .WithMany()
                     .HasForeignKey(l => l.UnitID)
@@ -124,6 +129,44 @@ namespace RentalPropertyManager.Data
                     .WithMany()
                     .HasForeignKey(l => l.ApplicationID)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure Review
+            builder.Entity<Review>(entity =>
+            {
+                entity.Property(r => r.Comment).HasMaxLength(1000);
+
+                entity.HasOne(r => r.Application).WithMany()
+                    .HasForeignKey(r => r.ApplicationID).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(r => r.User).WithMany()
+                    .HasForeignKey(r => r.UserID).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(r => r.OutcomeStatus).WithMany()
+                    .HasForeignKey(r => r.OutcomeApplicationStatusID).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure ActionType
+            builder.Entity<ActionType>(entity =>
+            {
+                entity.Property(a => a.Name).IsRequired().HasMaxLength(100);
+                entity.HasIndex(a => a.Name).IsUnique();
+            });
+
+            // Configure ActionHistory
+            builder.Entity<ActionHistory>(entity =>
+            {
+                entity.Property(a => a.FromStatus).HasMaxLength(50);
+                entity.Property(a => a.ToStatus).HasMaxLength(50);
+
+                entity.HasOne(a => a.ActionType).WithMany()
+                    .HasForeignKey(a => a.ActionTypeID).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.User).WithMany()
+                    .HasForeignKey(a => a.UserID).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.Application).WithMany()
+                    .HasForeignKey(a => a.ApplicationID).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.Unit).WithMany()
+                    .HasForeignKey(a => a.UnitID).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(a => a.Property).WithMany()
+                    .HasForeignKey(a => a.PropertyID).OnDelete(DeleteBehavior.Restrict);
             });
 
             // Configure ResidenceHistory

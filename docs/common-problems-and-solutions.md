@@ -357,6 +357,32 @@ If the migration fails due to NullReferenceException in EF Core's type mapper, t
 
 ---
 
+## Problem 7: Adding Notes/Comments Fields to the Wrong Entity (ManagerNotes on Lease)
+
+### Symptoms
+A `ManagerNotes` field was added to `Lease` (in the model, DbContext config, and migration) even though the domain spec does not define it there. The error later arose: `'Lease' does not contain a definition for 'ManagerNotes'`.
+
+### Root Cause
+When a concept like "manager notes" appears in the spec, it's tempting to add it directly to the entity that needs review (e.g., `Lease`). However, the spec defines ManagerNotes as its own entity: it references objects by `EntityName` and `EntityID`, not as a field on each table.
+
+**How ManagerNotes works:**
+- `ManagerNotes` is a standalone table with columns: `Id`, `EntityName` (e.g., "Lease", "Application"), `EntityID`, `Notes`, `CreatedAt`, `AuthorID`.
+- When a manager adds notes to a lease, you insert a `ManagerNotes` row with `EntityName = "Lease"` and `EntityID = lease.Id`.
+- Code never directly accesses `lease.ManagerNotes`; instead, you query `context.ManagerNotes.Where(m => m.EntityName == "Lease" && m.EntityID == lease.Id)`.
+
+This pattern allows one table to hold notes for *any* entity type without bloating the schema.
+
+### Solution
+- **Do NOT** add `ManagerNotes`, `Notes`, or similar comment fields to `Lease`, `Application`, `Review`, or other entities.
+- If you need a note on an entity, insert a `ManagerNotes` row that references it by name and ID.
+- Review comments live on `Review.Comment` (which is a real column because it's part of the review decision). Do not duplicate or move comments to `Lease`.
+- Keep `ApplicationDbContext` and migrations clean: only add fields that the domain model defines on that entity.
+
+### Key Learning
+**Separate the concept of comment/note storage from the entity being noted.** The ManagerNotes table uses a generic "EntityName + EntityID" pattern so you don't have to repeat a notes column on every table. This keeps the schema lean and makes it easy to add notes to new entity types without migrations.
+
+---
+
 ## Quick Reference: When to Use What
 
 | Problem | Tool | Command |

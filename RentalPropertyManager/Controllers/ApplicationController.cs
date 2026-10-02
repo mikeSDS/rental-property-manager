@@ -18,11 +18,13 @@ namespace RentalPropertyManager.Controllers
 
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ApplicationController> _logger;
+        private readonly RentalPropertyManager.Services.IAuditService _audit;
 
-        public ApplicationController(ApplicationDbContext context, ILogger<ApplicationController> logger)
+        public ApplicationController(ApplicationDbContext context, ILogger<ApplicationController> logger, RentalPropertyManager.Services.IAuditService? audit = null)
         {
             _context = context;
             _logger = logger;
+            _audit = audit ?? new RentalPropertyManager.Services.AuditService(context);
         }
 
         private string? CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -361,8 +363,10 @@ namespace RentalPropertyManager.Controllers
             }
 
             var submittedStatus = await GetStatusAsync(ApplicationStatus.Submitted);
+            var submitFromStatus = application.Status.Name;
             application.ApplicationStatusID = submittedStatus.Id;
             application.Status = submittedStatus;
+            await _audit.LogStatusChangeAsync(ActionType.Submission, CurrentUserId!, application.Id, submitFromStatus, submittedStatus.Name);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Application {ApplicationId} submitted by user {UserId}", application.Id, CurrentUserId);
@@ -390,8 +394,10 @@ namespace RentalPropertyManager.Controllers
             }
 
             var withdrawn = await GetStatusAsync(ApplicationStatus.Withdrawn);
+            var withdrawFromStatus = application.Status.Name;
             application.ApplicationStatusID = withdrawn.Id;
             application.Status = withdrawn;
+            await _audit.LogStatusChangeAsync(ActionType.Withdraw, CurrentUserId!, application.Id, withdrawFromStatus, withdrawn.Name);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Application {ApplicationId} withdrawn by user {UserId}", application.Id, CurrentUserId);
