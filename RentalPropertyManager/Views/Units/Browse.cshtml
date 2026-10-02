@@ -1,0 +1,87 @@
+@{
+    ViewData["Title"] = "Browse Units";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1>Available Units</h1>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div id="unitsContainer" class="row">
+                <div class="col-12 text-center py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Load units on page load
+        document.addEventListener('DOMContentLoaded', async function () {
+            await loadUnits();
+        });
+
+        // Load available units
+        async function loadUnits() {
+            try {
+                const response = await fetch('/units/list');
+                const units = await response.json();
+
+                const container = document.getElementById('unitsContainer');
+                container.innerHTML = '';
+
+                if (units.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted py-4">No units available</div>';
+                    return;
+                }
+
+                units.forEach(unit => {
+                    const card = document.createElement('div');
+                    card.className = 'col-md-6 col-lg-4 mb-4';
+                    card.innerHTML = `
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">${escapeHtml(unit.propertyName)}</h5>
+                                <p class="card-text">
+                                    <strong>Unit #:</strong> ${escapeHtml(unit.unitNumber)}<br />
+                                    <strong>Bedrooms:</strong> ${unit.bedrooms}<br />
+                                    <strong>Rent:</strong> $${unit.monthlyRent.toFixed(2)}<br />
+                                    <strong>Type:</strong> ${escapeHtml(unit.unitTypeName)}
+                                </p>
+                                <div class="d-grid">
+                                    <button class="btn btn-primary" onclick="applyForUnit(${unit.unitID})">
+                                        Apply Now
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading units:', error);
+                document.getElementById('unitsContainer').innerHTML = 
+                    '<div class="col-12 text-center text-danger">Error loading units</div>';
+            }
+        }
+
+        // Apply for unit (placeholder - will be implemented in future version)
+        function applyForUnit(unitId) {
+            alert(`Application for unit ${unitId} coming soon!`);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+}

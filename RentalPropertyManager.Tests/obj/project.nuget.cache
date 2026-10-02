@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "bL2kBTt6pYA=",
+  "dgSpecHash": "wiE4Ujgb4yE=",
   "success": true,
   "projectFilePath": "C:\\Users\\mikev\\source\\repos\\RentalPropertyManager\\RentalPropertyManager.Tests\\RentalPropertyManager.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mikev\\.nuget\\packages\\azure.core\\1.50.0\\azure.core.1.50.0.nupkg.sha512",
     "C:\\Users\\mikev\\.nuget\\packages\\azure.identity\\1.17.1\\azure.identity.1.17.1.nupkg.sha512",
+    "C:\\Users\\mikev\\.nuget\\packages\\bogus\\35.6.5\\bogus.35.6.5.nupkg.sha512",
     "C:\\Users\\mikev\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
     "C:\\Users\\mikev\\.nuget\\packages\\coverlet.collector\\6.0.4\\coverlet.collector.6.0.4.nupkg.sha512",
     "C:\\Users\\mikev\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",

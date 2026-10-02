@@ -7,6 +7,33 @@ This document outlines the revised, prioritized software development roadmap for
 
 At **v0.6**, the core system is 100% feature-complete, fully functional, and independently testable. Optional **bonus features** (Manager Notes, Soft Validation Saving, Paged Grid View Component with OpenAPI, Review Queue, and Multi-Applicant Co-signing with Optimistic Concurrency) are isolated into subsequent versions (**v0.7 through v1.0**).
 
+
+### UnitType Architecture & Active/Inactive State Specifications
+The application enforces a dynamic lookup architecture for `UnitType` records using an `ActiveBool` status flag.
+
+#### Standard Rental Unit Type Names
+Unit Types describe the **structure/style** of the rental unit and are independent of bedroom count.
+The `Bedrooms` field on the Unit model stores the specific number of bedrooms (1-4, etc.).
+- Studio / Efficiency
+- Traditional Multi-Bedroom
+- Loft
+- Townhome
+- Multiplex Unit (Duplex / Triplex / Fourplex)
+- Penthouse
+- Mixed-Use Residential
+- Specialized Housing Unit
+
+#### Active/Inactive State & Business Selection Rules
+- **Active State (`ActiveBool == true`)**: Unit types available for selection when creating new units or updating existing unit records.
+- **Inactive State (`ActiveBool == false`)**: Historical unit types retained for data integrity and existing unit references.
+- **Architecture & Selection Rules**:
+  1. **Existing Unit Display**: Units assigned an inactive unit type must continue to display their assigned `UnitType` correctly across all list, table, and detail views to prevent historical data loss.
+  2. **Create Dropdown Rule**: Dropdowns when creating a new unit MUST filter to display **active unit types only**.
+  3. **Edit Dropdown Rule**: Dropdowns when editing an existing unit display active unit types PLUS the unit's currently assigned inactive unit type (if applicable) so the view renders without resetting or corrupting data.
+  4. **Server-Side Validation**: Server controllers MUST validate and reject any `POST`/`PUT` requests that attempt to assign an inactive `UnitTypeID` to new units or change an existing unit's type to a different inactive `UnitType`.
+---
+
+
 ---
 
 ## Machine-Readable Agent Execution Metadata

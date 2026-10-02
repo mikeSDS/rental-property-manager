@@ -1,0 +1,3 @@
+﻿DELETE FROM Units;
+DELETE FROM Properties;
+DELETE FROM UnitTypes;

@@ -24,6 +24,7 @@ Lease
 	ApplicationId
 	StartDate
 	EndDate
+	MonthlyRent (copied from Unit.MonthlyRent at lease signing)
 
 Application
 	UnitID

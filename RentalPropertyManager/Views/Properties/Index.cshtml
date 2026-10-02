@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Properties";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h1>Properties</h1>
+        </div>
+        <div class="col-md-6 text-end">
+            <button class="btn btn-primary" id="createPropertyBtn">
+                <i class="bi bi-plus-circle"></i> Create Property
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped table-hover" id="propertiesTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>City, State</th>
+                        <th>Zip Code</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="propertiesTableBody">
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Container -->
+<div id="propertyModalContainer"></div>
+
+@section Scripts {
+    <script src="~/js/properties-index.js"></script>
+}

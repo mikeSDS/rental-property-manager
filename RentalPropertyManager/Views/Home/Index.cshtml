@@ -1,8 +1,25 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+    var isPropertyManager = User.IsInRole("PropertyManager");
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-5">
+    <h2>Rental Property Manager</h2>
+    <div class="list-group mt-4">
+        @if (isPropertyManager)
+        {
+            <a href="/Properties" class="list-group-item list-group-item-action">
+                <h5 class="mb-1">Manage Properties</h5>
+                <p class="mb-1">Create, edit, and manage rental properties</p>
+            </a>
+            <a href="/Units" class="list-group-item list-group-item-action">
+                <h5 class="mb-1">Manage Units</h5>
+                <p class="mb-1">Create, edit, and manage rental units</p>
+            </a>
+        }
+        <a href="/Units/Browse" class="list-group-item list-group-item-action">
+            <h5 class="mb-1">Browse Available Units</h5>
+            <p class="mb-1">View and search available units for rent</p>
+        </a>
+    </div>
 </div>

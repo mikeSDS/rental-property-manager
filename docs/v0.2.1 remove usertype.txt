@@ -1,0 +1,24 @@
+Task: Refactor the application to completely remove UserType and rely 100% on native ASP.NET Core Identity Roles.
+
+Context & Requirements:
+1. Domain Model Refactoring:
+   - Remove the 'UserType' property from ApplicationUser (Models/ApplicationUser.cs). ApplicationUser should extend IdentityUser with only CreatedAt (DateTime).
+   - Remove any UserType builder configurations, mappings, or property references from ApplicationDbContext.cs.
+   - Generate a new EF Core migration (e.g., 'dotnet ef migrations add RemoveUserTypeProperty') and update the database.
+
+2. Role Assignment & Registration:
+   - In RegisterViewModel / Register page, capture RoleChoice ("Applicant" or "PropertyManager").
+   - On successful sign-up, assign the user strictly using await _userManager.AddToRoleAsync(user, roleChoice). Do not assign any UserType property.
+
+3. Authorization & UI Shell:
+   - Update all controllers, Razor Pages, and partial views to check authorization using User.IsInRole("PropertyManager") / User.IsInRole("Applicant") or [Authorize(Roles = "...")].
+   - Ensure _Layout.cshtml renders the correct role badge based on User.IsInRole().
+
+4. Startup Seeding (DbInitializer):
+   - Ensure DbInitializer creates "Applicant" and "PropertyManager" Identity roles idempotently.
+   - Use Bogus (Faker<ApplicationUser>) to seed test accounts: manager@realestate.com in role PropertyManager, and applicant@realestate.com in role Applicant (with EmailConfirmed = true).
+   - Seed UnitType lookups ("Active", "Inactive").
+
+5. Testing & Verification:
+   - Update tests to verify user role assignment using _userManager.IsInRoleAsync.
+   - Run 'dotnet build' and 'dotnet test'. Ensure all code builds cleanly with zero compi

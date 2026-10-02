@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RentalPropertyManager.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+53c51e5e1e81ba02ed271285860b171f1549547d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0d53b12d3cc1e30d67ae602aabe84171eb55a244")]
 [assembly: System.Reflection.AssemblyProductAttribute("RentalPropertyManager.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RentalPropertyManager.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

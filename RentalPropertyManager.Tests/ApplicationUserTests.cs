@@ -23,29 +23,5 @@ namespace RentalPropertyManager.Tests
 
             Assert.True(user.CreatedAt >= now.AddSeconds(-1) && user.CreatedAt <= now.AddSeconds(1));
         }
-
-        [Fact]
-        public void ApplicationUser_UserTypeCanBeApplicant()
-        {
-            var user = new ApplicationUser { UserName = "testuser", UserType = "Applicant" };
-
-            Assert.Equal("Applicant", user.UserType);
-        }
-
-        [Fact]
-        public void ApplicationUser_UserTypeCanBePropertyManager()
-        {
-            var user = new ApplicationUser { UserName = "testuser", UserType = "PropertyManager" };
-
-            Assert.Equal("PropertyManager", user.UserType);
-        }
-
-        [Fact]
-        public void ApplicationUser_UserTypeCanBeNull()
-        {
-            var user = new ApplicationUser { UserName = "testuser", UserType = null };
-
-            Assert.Null(user.UserType);
-        }
     }
 }

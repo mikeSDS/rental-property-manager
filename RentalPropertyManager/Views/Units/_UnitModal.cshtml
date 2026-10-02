@@ -1,0 +1,81 @@
+@using RentalPropertyManager.ViewModels
+@model UnitFormViewModel
+
+<div class="modal fade" id="unitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(Model?.Id.HasValue == true ? "Edit Unit" : "Create Unit")</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="unitForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    @if (Model?.Id.HasValue == true)
+                    {
+                        <input type="hidden" name="id" value="@Model.Id" />
+                    }
+
+                    <div class="mb-3">
+                        <label for="propertyID" class="form-label">Property *</label>
+                        <select class="form-select" id="propertyID" name="propertyID" required>
+                            <option value="">-- Select Property --</option>
+                            @if (Model?.AvailableProperties != null)
+                            {
+                                @foreach (var item in Model.AvailableProperties)
+                                {
+                                    <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                }
+                            }
+                        </select>
+                        <span class="text-danger" data-valmsg-for="PropertyID"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="unitNumber" class="form-label">Unit Number *</label>
+                        <input type="text" class="form-control" id="unitNumber" name="unitNumber" value="@Model?.UnitNumber" required maxlength="50" />
+                        <span class="text-danger" data-valmsg-for="UnitNumber"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bedrooms" class="form-label">Bedrooms *</label>
+                                <input type="number" class="form-control" id="bedrooms" name="bedrooms" value="@Model?.Bedrooms" required min="1" max="10" />
+                                <span class="text-danger" data-valmsg-for="Bedrooms"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="monthlyRent" class="form-label">Monthly Rent *</label>
+                                <input type="number" class="form-control" id="monthlyRent" name="monthlyRent" value="@Model?.MonthlyRent" required min="0.01" max="100000" step="0.01" />
+                                <span class="text-danger" data-valmsg-for="MonthlyRent"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="unitTypeID" class="form-label">Unit Type *</label>
+                        <select class="form-select" id="unitTypeID" name="unitTypeID" required>
+                            <option value="">-- Select Unit Type --</option>
+                            @if (Model?.AvailableUnitTypes != null)
+                            {
+                                @foreach (var item in Model.AvailableUnitTypes)
+                                {
+                                    <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                }
+                            }
+                        </select>
+                        <span class="text-danger" data-valmsg-for="UnitTypeID"></span>
+                    </div>
+
+                    <div id="formErrors"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">@(Model?.Id.HasValue == true ? "Update" : "Create")</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

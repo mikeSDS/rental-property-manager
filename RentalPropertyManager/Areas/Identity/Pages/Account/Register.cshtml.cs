@@ -71,7 +71,7 @@ namespace RentalPropertyManager.Areas.Identity.Pages.Account
             public string ConfirmPassword { get; set; }
 
             [Required]
-            [Display(Name = "User Type")]
+            [Display(Name = "User Role")]
             public string RoleChoice { get; set; }
         }
 
@@ -88,7 +88,6 @@ namespace RentalPropertyManager.Areas.Identity.Pages.Account
             if (ModelState.IsValid)
             {
                 var user = CreateUser();
-                user.UserType = Input.RoleChoice;
                 user.CreatedAt = DateTime.UtcNow;
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);

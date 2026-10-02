@@ -5,6 +5,12 @@ This App was craeted as a Tech Assessment
 Mike Volo
 9/30/2026
 
+## Useful Info
+
+- see PROJECT_PLAN.md for breakdown of each version and features
+- see /docs folder for common problems and solutions, and other useful information
+
+
 
 # Environment Setup Instruction
 
@@ -60,3 +66,9 @@ Run all tests
 Run tests with verbose output 
 	 - dotnet test --verbosity detailed
 
+### Database Seeding
+
++ The database is seeded with initial data when the application starts, without duplicating existing data. 
+  + This is handled in the `DbInitializer.cs` file.
++ If you need to reset the database and reseed it, you can run the sql script located in the `docs` folder. 
+  +This script will clear the database without clearing the users
