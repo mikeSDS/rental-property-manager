@@ -1,0 +1,32 @@
+@model RentalPropertyManager.ViewModels.Applications.ApplicationListViewModel
+@{
+    ViewData["Title"] = "Applications";
+}
+
+<h1>Applications</h1>
+
+<form id="application-filter-form" method="get" asp-controller="ApplicationList" asp-action="Index" class="row g-2 mb-3" data-filter-url="@Url.Action("Filter", "ApplicationList")">
+    <div class="col-md-4">
+        <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Search unit, property or applicant" />
+    </div>
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">All statuses</option>
+            @foreach (var s in Model.Statuses)
+            {
+                <option value="@s" selected="@(s == Model.Status)">@s</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </div>
+</form>
+
+<div id="application-table-container">
+    <partial name="_ApplicationRows" model="Model.Items" />
+</div>
+
+@section Scripts {
+    <script src="~/js/application-list-filter.js"></script>
+}

@@ -186,12 +186,30 @@ namespace RentalPropertyManager.Data
 
         private static async Task SeedApplicationDataAsync(ApplicationDbContext dbContext, UserManager<ApplicationUser> userManager)
         {
-            // Seed ApplicationStatus lookups if table is empty
-            if (!await dbContext.ApplicationStatuses.AnyAsync())
+            var existingStatusNames = await dbContext.ApplicationStatuses.Select(s => s.Name).ToListAsync();
+            var missingStatuses = ApplicationStatus.AllNames.Except(existingStatusNames).ToList();
+            if (missingStatuses.Count > 0)
             {
-                dbContext.ApplicationStatuses.AddRange(
-                    ApplicationStatus.AllNames.Select(name => new ApplicationStatus { Name = name }));
+                dbContext.ApplicationStatuses.AddRange(missingStatuses.Select(name => new ApplicationStatus { Name = name }));
                 await dbContext.SaveChangesAsync();
+            }
+
+            // Seed one active lease so the submission collision lock can be exercised
+            if (!await dbContext.Leases.AnyAsync())
+            {
+                var leaseUnit = await dbContext.Units.OrderByDescending(u => u.Id).FirstOrDefaultAsync();
+                if (leaseUnit != null)
+                {
+                    var today = DateTime.UtcNow.Date;
+                    dbContext.Leases.Add(new Lease
+                    {
+                        UnitID = leaseUnit.Id,
+                        StartDate = today.AddMonths(-2),
+                        EndDate = today.AddMonths(10),
+                        MonthlyRent = leaseUnit.MonthlyRent
+                    });
+                    await dbContext.SaveChangesAsync();
+                }
             }
 
             // Seed one application in every status if Applications table is empty

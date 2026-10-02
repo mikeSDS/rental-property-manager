@@ -199,6 +199,164 @@ Clear the database and reseed (use the SQL script to preserve users).
 
 ---
 
+## Problem 6: Model Relationships Configured Incorrectly (Direct vs. Junction Table)
+
+### Symptoms
+- Created models with direct foreign key references that should use a junction table
+- Schema doesn't match the domain design
+- Code references properties that don't exist on the model
+- Migration creates wrong table structure
+- Tests fail because model shape is incorrect
+
+### Root Cause
+The relationship requirement (one-to-many, many-to-many, etc.) was misunderstood or implemented directly instead of through a cross-reference/junction entity. Common mistakes:
+
+**Mistake 1: Direct many-to-many instead of junction table**
+```csharp
+// ❌ WRONG: Direct collection reference
+public class Application
+{
+    public ICollection<Applicant> Applicants { get; set; }  // No xref table
+}
+
+public class Applicant
+{
+    public Application Application { get; set; }  // Direct back-reference
+}
+```
+
+This breaks the domain model when an `Applicant` can belong to multiple `Application`s with unique metadata per relationship (e.g., `IsPrimary` status, `ResidenceHistories` per application).
+
+**Mistake 2: Attaching child entities to wrong parent**
+```csharp
+// ❌ WRONG: ResidenceHistory attached directly to Application
+public class Application
+{
+    public ICollection<ResidenceHistory> ResidenceHistories { get; set; }
+}
+
+public class ResidenceHistory
+{
+    public int ApplicationID { get; set; }
+    public int ApplicantID { get; set; }
+    // ❌ But which one owns the residence? Confusion and cascade issues.
+}
+```
+
+When `ResidenceHistory` should hang off the junction (`ApplicationApplicant`), not the application directly.
+
+### Solution
+**Step 1: Identify the relationship type from the domain model**
+
+Check `docs/RealEstate objects.md` or `PROJECT_PLAN.md`:
+- If an entity can relate to another in multiple unique ways → use a **junction table**
+- If metadata needed per relationship (flags, dates, ownership info) → use a **junction table**
+- If it's truly one-to-many with no special data → use direct FK
+
+**Step 2: Create the junction entity**
+
+```csharp
+public class ApplicationApplicant
+{
+    public int Id { get; set; }
+    public int ApplicationID { get; set; }
+    public int ApplicantID { get; set; }
+    public bool IsPrimary { get; set; }  // Metadata per relationship
+
+    public Application Application { get; set; }
+    public Applicant Applicant { get; set; }
+    public ICollection<ResidenceHistory> ResidenceHistories { get; set; }
+}
+```
+
+**Step 3: Update the primary entities**
+
+```csharp
+public class Application
+{
+    public ICollection<ApplicationApplicant> ApplicationApplicants { get; set; }  // ✅ Junction
+    // Remove: ICollection<Applicant> Applicants
+    // Remove: ICollection<ResidenceHistory> ResidenceHistories
+}
+
+public class Applicant
+{
+    public ICollection<ApplicationApplicant> ApplicationApplicants { get; set; }  // ✅ Junction
+    // Remove: Application Application
+}
+
+public class ResidenceHistory
+{
+    public int ApplicationApplicantID { get; set; }  // ✅ Points to junction
+    public ApplicationApplicant ApplicationApplicant { get; set; }
+    // Remove: int ApplicationID (indirect)
+    // Remove: int ApplicantID (indirect)
+}
+```
+
+**Step 4: Configure in DbContext**
+
+```csharp
+builder.Entity<ApplicationApplicant>(entity =>
+{
+    entity.HasOne(x => x.Application)
+        .WithMany(a => a.ApplicationApplicants)
+        .HasForeignKey(x => x.ApplicationID)
+        .OnDelete(DeleteBehavior.Cascade);
+
+    entity.HasOne(x => x.Applicant)
+        .WithMany(a => a.ApplicationApplicants)
+        .HasForeignKey(x => x.ApplicantID)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    entity.HasIndex(x => new { x.ApplicationID, x.ApplicantID }).IsUnique();
+});
+
+builder.Entity<ResidenceHistory>(entity =>
+{
+    entity.HasOne(r => r.ApplicationApplicant)
+        .WithMany(x => x.ResidenceHistories)
+        .HasForeignKey(r => r.ApplicationApplicantID)
+        .OnDelete(DeleteBehavior.Cascade);
+});
+```
+
+**Step 5: Update queries and seeding**
+
+Replace direct collection access:
+```csharp
+// ❌ OLD
+var applicant = application.Applicants.First();
+
+// ✅ NEW
+var link = application.ApplicationApplicants.First(x => x.IsPrimary);
+var applicant = link.Applicant;
+```
+
+Helper methods for readability:
+```csharp
+private ApplicationApplicant GetPrimaryLink(Application app) =>
+    app.ApplicationApplicants.First(x => x.IsPrimary);
+
+private IEnumerable<ResidenceHistory> GetAllResidences(Application app) =>
+    app.ApplicationApplicants.SelectMany(x => x.ResidenceHistories);
+```
+
+**Step 6: Remove and regenerate the migration**
+
+```bash
+dotnet ef migrations remove --force
+dotnet ef migrations add <YourMigrationName>
+dotnet ef database update
+```
+
+If the migration fails due to NullReferenceException in EF Core's type mapper, the Designer.cs snapshot may be corrupted. **Delete the manually-created migration files and regenerate.**
+
+### Key Learning
+**Always consult the domain model spec first** before creating relationships. If the spec mentions a "cross-reference table" or "xref," it's a junction table—never model it as a direct collection on both sides.
+
+---
+
 ## Quick Reference: When to Use What
 
 | Problem | Tool | Command |

@@ -350,6 +350,16 @@ namespace RentalPropertyManager.Controllers
                 return WizardBody(viewModel, StatusCodes.Status400BadRequest);
             }
 
+            var today = DateTime.UtcNow.Date;
+            var hasActiveLease = await _context.Leases.AnyAsync(l =>
+                l.UnitID == application.UnitID && l.StartDate <= today && l.EndDate >= today);
+            if (hasActiveLease)
+            {
+                ModelState.AddModelError(string.Empty, "This unit currently has an active lease and cannot accept applications.");
+                viewModel.CurrentStep = LastStep;
+                return WizardBody(viewModel, StatusCodes.Status400BadRequest);
+            }
+
             var submittedStatus = await GetStatusAsync(ApplicationStatus.Submitted);
             application.ApplicationStatusID = submittedStatus.Id;
             application.Status = submittedStatus;
@@ -359,6 +369,33 @@ namespace RentalPropertyManager.Controllers
 
             ModelState.Clear();
             return WizardBody(BuildViewModel(application, LastStep));
+        }
+
+        /// <summary>
+        /// POST /Application/Withdraw/{id} - Withdraw an owned application.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Withdraw(int id)
+        {
+            var (application, error) = await GetOwnedApplicationAsync(id, requireEditable: false);
+            if (error != null)
+            {
+                return error;
+            }
+
+            if (!ApplicationStatus.CanWithdraw(application!.Status.Name))
+            {
+                return BadRequest(new { success = false, error = "This application can no longer be withdrawn." });
+            }
+
+            var withdrawn = await GetStatusAsync(ApplicationStatus.Withdrawn);
+            application.ApplicationStatusID = withdrawn.Id;
+            application.Status = withdrawn;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Application {ApplicationId} withdrawn by user {UserId}", application.Id, CurrentUserId);
+            return RedirectToAction("Index", "ApplicationList");
         }
 
         private async Task<ApplicationStatus> GetStatusAsync(string name) =>

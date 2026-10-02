@@ -14,6 +14,7 @@ namespace RentalPropertyManager.Data
         public DbSet<Applicant> Applicants { get; set; }
         public DbSet<ApplicationApplicant> ApplicationApplicants { get; set; }
         public DbSet<ResidenceHistory> ResidenceHistories { get; set; }
+        public DbSet<Lease> Leases { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -107,6 +108,22 @@ namespace RentalPropertyManager.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(x => new { x.ApplicationID, x.ApplicantID }).IsUnique();
+            });
+
+            // Configure Lease
+            builder.Entity<Lease>(entity =>
+            {
+                entity.Property(l => l.MonthlyRent).HasPrecision(18, 2);
+
+                entity.HasOne(l => l.PropertyUnit)
+                    .WithMany()
+                    .HasForeignKey(l => l.UnitID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(l => l.Application)
+                    .WithMany()
+                    .HasForeignKey(l => l.ApplicationID)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Configure ResidenceHistory

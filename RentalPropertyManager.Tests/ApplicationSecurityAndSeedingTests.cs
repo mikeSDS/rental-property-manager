@@ -107,7 +107,7 @@ namespace RentalPropertyManager.Tests
             var second = await CountsAsync(provider);
 
             Assert.Equal(first, second);
-            Assert.Equal(6, first.Statuses);
+            Assert.Equal(7, first.Statuses);
             Assert.True(first.Applications >= 6);
             Assert.True(first.Applicants >= 6);
             Assert.True(first.Residences > 0);
