@@ -1,21 +1,40 @@
 # Property Management Application: Prioritized Version Roadmap & GitHub Agent Implementation Plan (v0.1 -> v1.0)
 
 ## Overview & Architecture Specifications
-This document outlines the revised, prioritized software development roadmap for the ASP.NET Core 10 MVC Property Management Web Application. 
+This document outlines the comprehensive, prioritized software development roadmap for the ASP.NET Core 10 MVC Property Management Web Application (`RentalPropertyManager`). It integrates all technical requirements, domain model specifications, role-based security architectures, database seeding rules, and automated test specifications.
 
 **Core Priority Strategy**: All **non-bonus core requirements** (Authentication, Property & Unit CRUD, Unit Availability, Rental Application Wizard, Database Application Filtering, Property Manager Review Workflow, 12-Month Lease Generation, and Bogus Data Seeding) are completed first in **v0.1 through v0.6**. 
 
 At **v0.6**, the core system is 100% feature-complete, fully functional, and independently testable. Optional **bonus features** (Manager Notes, Soft Validation Saving, Paged Grid View Component with OpenAPI, Review Queue, and Multi-Applicant Co-signing with Optimistic Concurrency) are isolated into subsequent versions (**v0.7 through v1.0**).
 
+---
 
-### UnitType Architecture & Active/Inactive State Specifications
-The application enforces a dynamic lookup architecture for `UnitType` records using an `ActiveBool` status flag.
+## Mandatory Testing & Data Seeding Requirements
+
+All version releases and implementation specifications MUST explicitly fulfill these core requirements:
+
+1. **Idempotent Full Database Seeding**:
+   - The database should be seeded idempotently with lookups, property managers, applicants, properties, units, and applications in every status.
+2. **Bogus Data Generation**:
+   - Seed your database with data using Bogus for .NET.
+3. **Automated Business Logic Unit Tests**:
+   - Add unit tests for business logic.
+
+---
+
+## Domain & Security Architecture Specifications
+
+### 1. Identity Roles-Only Security Architecture
+- All authorization relies **100% on native ASP.NET Core Identity Roles** (`PropertyManager` and `Applicant`).
+- Controller endpoints and Razor Pages must be decorated strictly with `[Authorize(Roles = "PropertyManager")]` or `[Authorize(Roles = "Applicant")]` (or `[Authorize]` for shared endpoints like unit browsing).
+- Custom user property checks (like legacy `UserType`) are strictly prohibited for authorization decisions.
+
+### 2. UnitType Architecture & Active/Inactive State Specifications
+The application enforces a dynamic lookup architecture for `UnitType` records using an `ActiveBool` status flag:
 
 #### Standard Rental Unit Type Names
-Unit Types describe the **structure/style** of the rental unit and are independent of bedroom count.
-The `Bedrooms` field on the Unit model stores the specific number of bedrooms (1-4, etc.).
 - Studio / Efficiency
-- Traditional Multi-Bedroom
+- Traditional Multi-Bedroom (1BR, 2BR, 3BR+)
 - Loft
 - Townhome
 - Multiplex Unit (Duplex / Triplex / Fourplex)
@@ -23,16 +42,16 @@ The `Bedrooms` field on the Unit model stores the specific number of bedrooms (1
 - Mixed-Use Residential
 - Specialized Housing Unit
 
+> **Domain Architecture Clarification**: The number of bedrooms (`Bedrooms` integer property on the `Unit` entity) is an independent numerical attribute (e.g., 0, 1, 2, 3+) and is **NOT** a `UnitType`. `UnitType` is a category lookup entity representing structural/architectural layouts.
+
 #### Active/Inactive State & Business Selection Rules
 - **Active State (`ActiveBool == true`)**: Unit types available for selection when creating new units or updating existing unit records.
 - **Inactive State (`ActiveBool == false`)**: Historical unit types retained for data integrity and existing unit references.
-- **Architecture & Selection Rules**:
+- **Selection Rules**:
   1. **Existing Unit Display**: Units assigned an inactive unit type must continue to display their assigned `UnitType` correctly across all list, table, and detail views to prevent historical data loss.
   2. **Create Dropdown Rule**: Dropdowns when creating a new unit MUST filter to display **active unit types only**.
   3. **Edit Dropdown Rule**: Dropdowns when editing an existing unit display active unit types PLUS the unit's currently assigned inactive unit type (if applicable) so the view renders without resetting or corrupting data.
   4. **Server-Side Validation**: Server controllers MUST validate and reject any `POST`/`PUT` requests that attempt to assign an inactive `UnitTypeID` to new units or change an existing unit's type to a different inactive `UnitType`.
----
-
 
 ---
 
@@ -41,14 +60,14 @@ The `Bedrooms` field on the Unit model stores the specific number of bedrooms (1
 project_name: PropertyManagementSystem
 framework: .NET 10 ASP.NET Core MVC
 database: SQL Server / Entity Framework Core 10 (Code-First)
-auth_framework: ASP.NET Core Identity
-data_seeding: Bogus for .NET
-frontend_architecture: Razor Views, Partial Views, View Components, Browser-Native ES6 Modules
+auth_framework: ASP.NET Core Identity Roles
+data_seeding: Bogus for .NET (Idempotent Startup Seeding)
+frontend_architecture: Razor Views, Partial Views, View Components, Bootstrap 5, External JS Modules in wwwroot/js/
 version_roadmap:
   - v0.1: [CORE] Solution Foundation, Database Context & Identity Setup
   - v0.2: [CORE] Property & Unit Management (Modals, Active UnitType Server Rules & Browsing)
-  - v0.3: [CORE] Rental Application Single-Page Wizard, Section Partials & Residence History Modals
-  - v0.4: [CORE] Application Submission, Active Lease Check & DB Application List Filtering
+  - v0.3: [CORE] Single-Applicant Rental Application Wizard, Section Partials & Residence History Modals
+  - v0.4: [CORE] Application Submission, Active Lease Check & Database Application List Filtering
   - v0.5: [CORE] Property Manager Review Workflow, Audit Timeline & 12-Month Lease Issuance
   - v0.6: [CORE MILESTONE] Bogus Idempotent Seeding & Core Automated Test Suite (100% Core Complete)
   - v0.7: [BONUS] Manager Notes Security Isolation & Draft Soft Validation Error Preservation
@@ -61,83 +80,89 @@ version_roadmap:
 ## Version v0.1: [CORE] Solution Foundation, Database Context & Identity Setup
 
 ### 1. Objective
-Establish the solution structure, Entity Framework Core SQL Server DB context, ASP.NET Core Identity user/role management, and base lookup tables.
+Establish the solution structure, Entity Framework Core SQL Server DB context, ASP.NET Core Identity user/role management (`PropertyManager` and `Applicant`), and base lookup tables.
 
 ### 2. Business Functions & User Stories
 - **System Admin / Setup**: Configure ASP.NET Core 10 MVC web app with `_Layout.cshtml` global shell, Bootstrap 5 navigation, and flash message toast notifications.
 - **User Authentication**: Implement user registration, login, and logout. During registration, the user selects their system role: `Applicant` or `PropertyManager`.
-- **Database Initialization**: Apply EF Core database migrations automatically on app startup. Idempotently seed `UnitType` lookup values (`Active`, `Inactive`).
+- **Database Initialization**: Apply EF Core database migrations automatically on app startup. Idempotently seed `UnitType` lookup values (`ActiveBool = true/false`).
 
 ### 3. Business Rules & Constraints
-- Users must belong to either the `Applicant` or `PropertyManager` role.
+- Users must belong to either the `Applicant` or `PropertyManager` ASP.NET Core Identity role.
 - Roles must be enforced via `[Authorize(Roles = "PropertyManager")]` and `[Authorize(Roles = "Applicant")]` on controllers/actions.
 - DB migrations and lookup seeding must execute idempotently on startup.
 
 ### 4. Models Needed
 #### Entity Framework Core Entities
-- `ApplicationUser`: Extends `IdentityUser`. Properties: `UserType` (`Applicant` or `PropertyManager`), `CreatedAt`.
-- `UnitType`: `Id` (int), `UnitTypeName` (string), `ActiveBool` (bool).
+- `ApplicationUser`: Extends `IdentityUser`. Properties: `CreatedAt` (`DateTime`).
+- `UnitType`: `Id` (int PK), `UnitTypeName` (string, required, max 100), `ActiveBool` (bool, default true).
 
 #### ViewModels & DTOs
-- `RegisterViewModel`: `Email`, `Password`, `ConfirmPassword`, `RoleChoice` (`Applicant` or `PropertyManager`).
-- `LoginViewModel`: `Email`, `Password`, `RememberMe`.
+- `RegisterViewModel`: `Email` (Required, EmailAddress), `Password` (Required), `ConfirmPassword` (Compare Password), `RoleChoice` (`Applicant` or `PropertyManager`).
+- `LoginViewModel`: `Email` (Required, EmailAddress), `Password` (Required), `RememberMe` (bool).
 
 ### 5. Controllers & UI / Razor Components
-- `AccountController`: `Register` (GET/POST), `Login` (GET/POST), `Logout` (POST).
+- `AccountController` / `Pages/Account`: `Register` (GET/POST), `Login` (GET/POST), `Logout` (POST).
 - Views: `Views/Account/Register.cshtml`, `Views/Account/Login.cshtml`, `Views/Shared/_Layout.cshtml`.
 
 ### 6. Required Tests & Assertions
-- **Unit Tests**:
-  - `RegisterViewModelTests`: Validate password complexity and required role selection.
-- **Integration Tests**:
-  - `AuthenticationTests`: Assert successful user registration assigns correct ASP.NET Core Identity Role (`Applicant` vs `PropertyManager`).
-  - `DatabaseStartupTests`: Assert DB migrations apply and `UnitType` lookup table is seeded on startup.
+- **Unit Tests (`RegisterViewModelTests.cs`, `UnitTypeTests.cs`)**:
+  - Validate password complexity, required role selection, and `UnitType` domain defaults.
+- **Integration Tests (`AuthenticationTests.cs`, `DatabaseStartupTests.cs`)**:
+  - Assert successful user registration assigns correct ASP.NET Core Identity Role (`Applicant` vs `PropertyManager`).
+  - Assert DB migrations apply cleanly and `UnitType` lookup table is seeded idempotently on startup.
 
 ---
 
 ## Version v0.2: [CORE] Property & Unit Management (Modals, Active UnitType Server Rules & Browsing)
 
 ### 1. Objective
-Implement Property Manager CRUD for Properties and Units using Razor partial modals, enforce server-side `UnitType` active/inactive validation rules, and enable Applicants to browse available units.
+Implement Property Manager CRUD for Properties and Units using Bootstrap partial view modals, enforce server-side `UnitType` active/inactive validation rules, and enable Applicants and Managers to browse available units.
 
 ### 2. Business Functions & User Stories
-- **Property Manager**: Create, edit, and soft-delete/remove Properties and Units via Bootstrap partial view modals.
+- **Property Management**: Property Manager can view all properties, create new properties, edit existing properties, and remove properties via Bootstrap partial view modals.
+- **Unit Management**: Property Manager can add, edit, and remove units associated with a property (`UnitNumber`, `Bedrooms`, `MonthlyRent`, `UnitTypeID`) via modal forms.
 - **UnitType Lookup Enforcement**: Manage unit type selection. Inactive unit types remain displayed on existing units but cannot be selected when creating or updating any unit.
-- **Applicant Unit Browsing**: Applicants can browse a list of properties and units to select a unit and initiate a rental application.
+- **Applicant & Manager Unit Browsing**: Users can browse a list of properties and units, search/filter by bedrooms or max rent, and initiate a rental application.
 
 ### 3. Business Rules & Constraints
+- Only users in the `PropertyManager` role can manage properties and units (`[Authorize(Roles = "PropertyManager")]`).
 - **Server-Side UnitType Rule**: On `POST`/`PUT` of a Unit, the server MUST reject the submission if the selected `UnitTypeId` has `ActiveBool == false`. Existing units assigned an inactive `UnitTypeId` retain it visually in the UI.
-- Modal interactions must use Razor Partial Views returned by controller actions. Form validation failures re-render the partial inside the modal with error messages; successful saves return HTTP 200/201 and trigger a grid refresh.
+- `UnitNumber` must be unique per property.
+- `Bedrooms` must be `>= 0`, `MonthlyRent` must be `> 0` (configured with EF Core `.HasPrecision(18, 2)`).
+- **Client JS Architecture**: Modal forms MUST be HTML-only (no inline `<script>` tags). Client AJAX logic lives in `wwwroot/js/modal-handler.js` using external script loading and event delegation. Form validation failures (`HTTP 400`) re-render partial HTML with `text-danger` error spans; valid saves (`HTTP 200`) return JSON `{ success: true }` and refresh the grid.
 
 ### 4. Models Needed
 #### Entity Framework Core Entities
-- `Property`: `Id` (int), `Name` (string), `StreetAddress` (string), `City` (string), `State` (string), `ZipCode` (string), `CreatedAt` (DateTime).
-- `Unit`: `Id` (int), `PropertyID` (int FK), `UnitNumber` (string), `Bedrooms` (int), `MonthlyRent` (decimal), `UnitTypeID` (int FK).
+- `Property`: `Id` (int PK), `Name` (string, required, max 150), `StreetAddress` (string, required, max 200), `City` (string, required, max 100), `State` (string, required, max 50), `ZipCode` (string, required, max 20), `CreatedAt` (DateTime), `ManagerNotes` (string, nullable). Navigation: `ICollection<Unit> Units`.
+- `Unit`: `Id` (int PK), `PropertyID` (int FK), `UnitNumber` (string, required, max 50), `Bedrooms` (int, required), `MonthlyRent` (decimal, required, precision 18,2), `UnitTypeID` (int FK), `ManagerNotes` (string, nullable). Navigation: `Property Property`, `UnitType UnitType`.
 
 #### ViewModels & DTOs
-- `PropertyFormViewModel`: `Id`, `Name`, `StreetAddress`, `City`, `State`, `ZipCode`.
-- `UnitFormViewModel`: `Id`, `PropertyID`, `UnitNumber`, `Bedrooms`, `MonthlyRent`, `UnitTypeID`, `AvailableUnitTypes` (SelectList containing only active types for dropdowns, plus current inactive type if editing).
-- `UnitBrowseViewModel`: `UnitID`, `PropertyName`, `UnitNumber`, `Bedrooms`, `MonthlyRent`, `UnitTypeName`, `IsAvailable`.
+- `PropertyFormViewModel` / `PropertyModalViewModel`: `Id`, `Name`, `StreetAddress`, `City`, `State`, `ZipCode`, `ManagerNotes`.
+- `UnitFormViewModel` / `UnitModalViewModel`: `Id`, `PropertyID`, `UnitNumber`, `Bedrooms`, `MonthlyRent`, `UnitTypeID`, `AvailableUnitTypes` (SelectList containing active types for dropdowns, plus current inactive type if editing).
+- `UnitBrowseViewModel`: `UnitID`, `PropertyID`, `PropertyName`, `PropertyAddress`, `UnitNumber`, `Bedrooms`, `MonthlyRent`, `UnitTypeName`, `IsAvailable`.
 
 ### 5. Controllers & UI / Razor Components
-- `PropertiesController`: `Index`, `Create` (GET/POST partial), `Edit` (GET/POST partial), `Delete` (POST).
-- `UnitsController`: `Create` (GET/POST partial), `Edit` (GET/POST partial), `Browse` (GET for Applicants).
-- Views & Partials: `Views/Properties/Index.cshtml`, `Views/Properties/_PropertyModal.cshtml`, `Views/Units/_UnitModal.cshtml`, `Views/Units/Browse.cshtml`.
+- `PropertiesController`: `Index` (GET list), `CreateModal` (GET partial / POST JSON), `EditModal` (GET partial / POST JSON), `Delete` (POST).
+- `UnitsController`: `CreateModal` (GET partial / POST JSON), `EditModal` (GET partial / POST JSON), `Delete` (POST), `Browse` (GET for Applicants/Managers).
+- Views & Partials: `Views/Properties/Index.cshtml`, `Views/Properties/_PropertyModal.cshtml`, `Views/Units/_UnitModal.cshtml`, `Views/Units/Browse.cshtml`, `wwwroot/js/modal-handler.js`.
 
 ### 6. Required Tests & Assertions
-- **Unit Tests**:
-  - `UnitServiceTests`: Assert server validation fails if `UnitTypeId` is inactive during Unit creation/edit.
-  - `UnitServiceTests`: Assert existing units with inactive `UnitTypeId` pass read/display validation.
-- **Integration Tests**:
-  - `PropertyManagerAccessTests`: Assert `Applicant` role receives HTTP 403 Forbidden when attempting to access `PropertiesController` POST actions.
-  - `UnitModalValidationTests`: Assert invalid modal post returns partial view HTML containing `text-danger` validation span elements.
+- **Unit Tests (`UnitServiceTests.cs`)**:
+  - Assert server validation fails if `UnitTypeId` is inactive during Unit creation/edit.
+  - Assert existing units with inactive `UnitTypeId` pass read/display validation.
+- **Integration Tests (`PropertyManagerAccessTests.cs`)**:
+  - Assert `Applicant` role receives HTTP 403 Forbidden when attempting to access `PropertiesController` or `UnitsController` POST actions.
+- **UI Modal Validation Tests (`UnitModalValidationTests.cs`)**:
+  - Assert invalid modal post returns partial view HTML containing `text-danger` validation span elements (HTTP 400).
+  - Assert valid modal post returns JSON success `{ success = true }` (HTTP 200).
 
 ---
 
 ## Version v0.3: [CORE] Single-Applicant Rental Application Wizard, Section Partials & Residence History Modals
 
 ### 1. Objective
-Build the single-page multi-section rental application wizard driven by one view model, utilizing section partial views and residence history modal CRUD.
+Build the single-page multi-section rental application wizard driven by one view model, utilizing section partial views, standalone external JavaScript (`wwwroot/js/application-wizard.js`), and residence history modal CRUD.
 
 ### 2. Business Functions & User Stories
 - **Applicant Wizard**: Single-page application experience with 3 sections:
@@ -151,32 +176,38 @@ Build the single-page multi-section rental application wizard driven by one view
 - **Read-Only vs Editable State**: The section partial renders editable form inputs if Application status is `Draft` or `Returned`; renders read-only display text for all other statuses (`Submitted`, `Approved`, `Denied`, `Withdrawn`). Server rejects posts to non-editable applications.
 
 ### 3. Business Rules & Constraints
-- Only 1 view model drives the single-page application wizard.
-- Residences must be managed through modal popups (partial views).
+- Only 1 view model (`ApplicationWizardViewModel`) drives the single-page application wizard.
+- Residences must be managed through modal popups (`_ResidenceModal.cshtml`). Server validation MUST enforce `MoveOutDate >= MoveInDate` when `MoveOutDate` is provided.
 - Controllers must validate application status server-side before accepting section updates (`Status` MUST be `Draft` or `Returned`).
+- All partial views contain HTML markup ONLY—NO inline `<script>` tags. Client logic lives in `wwwroot/js/application-wizard.js` with a `wireUpResidenceModal()` helper.
 
 ### 4. Models Needed
 #### Entity Framework Core Entities
-- `Application`: `Id` (int), `UnitID` (int FK), `ApplicantUserID` (string FK), `Date` (DateTime), `ApplicationStatusID` (int FK).
-- `Applicant`: `Id` (int), `ApplicationID` (int FK), `UserID` (string FK), `Name` (string), `Phone` (string), `Email` (string), `CurrentAddress` (string).
-- `ResidenceHistory`: `Id` (int), `ApplicationID` (int FK), `ApplicantID` (int FK), `Street` (string), `City` (string), `State` (string), `Zip` (string), `LandlordName` (string), `LandlordPhone` (string), `MoveInDate` (DateTime), `MoveOutDate` (DateTime?).
-- `ApplicationStatus`: `Id` (int), `Name` (string - `Draft`, `Submitted`, `Returned`, `Approved`, `Denied`, `Withdrawn`).
+- `Application`: `Id` (int PK), `UnitID` (int FK), `ApplicantUserID` (string FK to AspNetUsers), `Date` (DateTime), `ApplicationStatusID` (int FK), `ManagerNotes` (string, nullable). Navigation: `Unit Unit`, `ApplicationStatus ApplicationStatus`, `Applicant Applicant`, `ICollection<ResidenceHistory> ResidenceHistories`.
+- `Applicant`: `Id` (int PK), `ApplicationID` (int FK), `UserID` (string FK), `Name` (string, required, max 100), `Phone` (string, required, max 20), `Email` (string, required, max 100), `CurrentAddress` (string, required, max 200).
+- `ApplicantsXRef`: Junction entity `ApplicationID` (int FK), `ApplicantID` (int FK).
+- `ResidenceHistory`: `Id` (int PK), `ApplicationID` (int FK), `ApplicantID` (int FK), `Street` (string, required, max 200), `City` (string, required, max 100), `State` (string, required, max 50), `Zip` (string, required, max 20), `LandlordName` (string, required, max 100), `LandlordPhone` (string, required, max 20), `MoveInDate` (DateTime, required), `MoveOutDate` (DateTime, nullable).
+- `ApplicationStatus`: `Id` (int PK), `Name` (string: `Draft`, `Submitted`, `Returned`, `Approved`, `Denied`, `Withdrawn`, `Under Review`).
 
 #### ViewModels & DTOs
-- `ApplicationWizardViewModel`: `ApplicationID`, `UnitID`, `CurrentStep` (1, 2, or 3), `IsReadOnly`, `ApplicantInfo` (`ApplicantViewModel`), `Residences` (`List<ResidenceHistoryViewModel>`).
-- `ResidenceModalViewModel`: `ResidenceID`, `ApplicationID`, `Street`, `City`, `State`, `Zip`, `LandlordName`, `LandlordPhone`, `MoveInDate`, `MoveOutDate`.
+- `ApplicationWizardViewModel`: `ApplicationID`, `UnitID`, `UnitNumber`, `PropertyName`, `MonthlyRent`, `CurrentStep` (1, 2, or 3), `IsReadOnly`, `StatusName`, `ApplicantInfo` (`ApplicantFormViewModel`), `Residences` (`List<ResidenceHistoryViewModel>`).
+- `ApplicantFormViewModel` / `ApplicantProfileViewModel`: `ApplicantID`, `ApplicationID`, `Name`, `Phone`, `Email`, `CurrentAddress`.
+- `ResidenceHistoryViewModel` / `ResidenceModalViewModel`: `ResidenceID`, `ApplicationID`, `ApplicantID`, `Street`, `City`, `State`, `Zip`, `LandlordName`, `LandlordPhone`, `MoveInDate`, `MoveOutDate`.
 
 ### 5. Controllers & UI / Razor Components
-- `ApplicationController`: `Create` (GET - starts application in `Draft`), `Wizard` (GET/POST - handles `Continue`, `Back`, step rendering), `SaveResidence` (POST partial modal), `DeleteResidence` (POST).
-- Views & Partials: `Views/Application/Wizard.cshtml`, `Views/Application/Partials/_ApplicantInfoSection.cshtml`, `Views/Application/Partials/_ResidenceHistorySection.cshtml`, `Views/Application/Partials/_SummarySection.cshtml`, `Views/Application/Modals/_ResidenceModal.cshtml`.
+- `ApplicationController`: `Create` (GET - starts application in `Draft`), `Wizard` (GET/POST - handles `Continue`, `Back`, step rendering), `ResidenceModal` (GET partial), `SaveResidence` (POST partial modal), `DeleteResidence` (POST), `ResidenceTablePartial` (GET partial).
+- Views & Partials: `Views/Application/Wizard.cshtml`, `Views/Application/Partials/_ApplicantInfoSection.cshtml`, `Views/Application/Partials/_ResidenceHistorySection.cshtml`, `Views/Application/Partials/_ResidenceTable.cshtml`, `Views/Application/Partials/_SummarySection.cshtml`, `Views/Application/Modals/_ResidenceModal.cshtml`, `wwwroot/js/application-wizard.js`.
 
 ### 6. Required Tests & Assertions
-- **Unit Tests**:
-  - `ApplicationWizardTests`: Assert `Continue` on Step 1 validates required fields (`Name`, `Phone`, `Email`, `CurrentAddress`) and advances `CurrentStep` from 1 to 2 when valid.
-  - `ApplicationWizardTests`: Assert `Back` button navigates from Step 2 to Step 1 without invoking DB save.
-- **Integration Tests**:
-  - `ApplicationSecurityTests`: Assert HTTP POST to update an application in `Submitted` or `Approved` status returns HTTP 400/403.
-  - `ResidenceModalTests`: Assert adding a residence history item updates the DB table and re-renders the Step 2 residence table partial.
+- **Unit Tests (`ApplicationWizardTests.cs`)**:
+  - Assert `Continue` on Step 1 validates required fields and advances `CurrentStep` from 1 to 2 when valid.
+  - Assert `Back` button navigates from Step 2 to Step 1 without invoking DB save.
+  - Assert server validation fails if `MoveOutDate < MoveInDate` on residence history.
+  - Assert `IsReadOnly = true` when `ApplicationStatus` is `Submitted`, `Approved`, `Denied`, or `Withdrawn`.
+- **Integration Tests (`ApplicationSecurityTests.cs`, `ResidenceModalTests.cs`)**:
+  - Assert HTTP POST to update an application in `Submitted` or `Approved` status returns HTTP 400/403.
+  - Assert HTTP POST to update another user's application returns HTTP 403 Forbidden.
+  - Assert adding a residence history item updates the DB table and re-renders the Step 2 residence table partial.
 
 ---
 
@@ -187,15 +218,16 @@ Implement final application submission, server-side active lease checks on submi
 
 ### 2. Business Functions & User Stories
 - **Application Submission**: Applicant clicks `Submit` on the Summary page. System transitions status from `Draft`/`Returned` to `Submitted`.
-- **Active Lease Check at Submission**: When applicant clicks `Submit`, server verifies that the target Unit does not currently have an active lease covering today's date. If an active lease exists, reject submission with a user-friendly error message.
+- **Active Lease Check at Submission**: When applicant clicks `Submit`, server verifies that the target Unit does not currently have an active lease covering today's date (`StartDate <= Today <= EndDate`). If an active lease exists, reject submission with a user-friendly error message.
 - **Application List**:
   - Filtered list of applications by `Status` and `Property`.
-  - Filtering MUST be performed in SQL/database via EF Core `IQueryable`, NOT in memory.
+  - Filtering MUST be performed in SQL/database via EF Core `IQueryable`, NOT in memory (`.Where(a => a.Unit.PropertyID == propertyId && a.ApplicationStatusID == statusId)`).
   - Applicants see only their own submitted/draft applications; Property Managers see all applications across all properties.
 
 ### 3. Business Rules & Constraints
 - Application submission must verify unit lease availability.
-- Database query for application list MUST execute SQL `WHERE` clauses for filtering (`.Where(a => a.Unit.PropertyID == propertyId && a.ApplicationStatusID == statusId)`).
+- Database query for application list MUST execute SQL `WHERE` clauses for filtering.
+- Applicants receive HTTP 403 Forbidden if attempting to query applications owned by other users.
 
 ### 4. Models Needed
 #### ViewModels & DTOs
@@ -208,25 +240,26 @@ Implement final application submission, server-side active lease checks on submi
 - Views: `Views/ApplicationList/Index.cshtml`, `Views/ApplicationList/_ApplicationFilterBar.cshtml`.
 
 ### 6. Required Tests & Assertions
-- **Unit Tests**:
-  - `LeaseValidationServiceTests`: Assert submission is rejected with error when unit has an active lease (`StartDate <= Today <= EndDate`).
-- **Integration Tests**:
-  - `ApplicationListDatabaseFilterTests`: Capture generated EF Core SQL log and assert SQL contains `WHERE` clauses for `PropertyID` and `StatusID`.
-  - `ApplicationListAuthorizationTests`: Assert Applicant user receives ONLY their own applications in query results.
+- **Unit Tests (`LeaseValidationServiceTests.cs`)**:
+  - Assert submission is rejected with error when unit has an active lease (`StartDate <= Today <= EndDate`).
+- **Integration Tests (`ApplicationListDatabaseFilterTests.cs`, `ApplicationListAuthorizationTests.cs`)**:
+  - Capture generated EF Core SQL log and assert SQL contains `WHERE` clauses for `PropertyID` and `StatusID`.
+  - Assert Applicant user receives ONLY their own applications in query results.
 
 ---
 
 ## Version v0.5: [CORE] Property Manager Review Workflow, Audit Timeline & 12-Month Lease Issuance
 
 ### 1. Objective
-Build the Property Manager review modal (`Approve`, `Return`, `Deny`), status transition handling, status history timeline display, and automatic 12-month lease creation upon approval.
+Build the Property Manager review modal (`Approve`, `Return`, `Deny`), status transition handling, status history timeline display (`ActionHistory` / `Review`), and automatic 12-month lease creation upon approval.
 
 ### 2. Business Functions & User Stories
 - **Property Manager Review**: Property Manager opens a `Submitted` application and completes a review through a modal:
   - Select Outcome: `Approve`, `Return`, or `Deny`.
   - Comment: Optional for `Approve`, **MANDATORY** for `Return` and `Deny`.
-- **Automatic Lease Issuance**: Upon `Approve`, server validates lease availability once more. If clear, it creates a `Lease` record for the unit with `StartDate = Today` and a 12-month term (`EndDate = Today.AddMonths(12)`).
-- **Application Status History Timeline**: Application view displays a chronological history of status changes and review outcomes (Who, When, Outcome Status, Comment).
+- **Automated Lease Issuance**: Approving an application automatically generates a `Lease` for the unit starting today for a 12-month term (`StartDate = Today`, `EndDate = Today.AddMonths(12)`), copying `MonthlyRent` directly from `Unit.MonthlyRent` at lease signing.
+- **Approval Active Lease Check**: At the moment of approval, server checks if an active lease already exists for the unit. If an active lease exists, reject approval with an error message.
+- **Application Status History & Audit Timeline**: Application view displays a chronological history of status changes and review outcomes (Who, When, Outcome Status, Comment, ActionType).
 - **Applicant Withdrawal**: Applicant can withdraw a submitted application (status transitions to `Withdrawn`).
 
 ### 3. Business Rules & Constraints
@@ -237,12 +270,14 @@ Build the Property Manager review modal (`Approve`, `Return`, `Deny`), status tr
 
 ### 4. Models Needed
 #### Entity Framework Core Entities
-- `Lease`: `Id` (int), `UnitID` (int FK), `ApplicationID` (int FK), `StartDate` (DateTime), `EndDate` (DateTime), `CreatedAt` (DateTime).
-- `Review`: `Id` (int), `ApplicationID` (int FK), `UserID` (string FK), `ReviewDate` (DateTime), `OutcomeApplicationStatusID` (int FK), `Comment` (string).
+- `Lease`: `Id` (int PK), `UnitID` (int FK), `ApplicationID` (int FK), `StartDate` (DateTime), `EndDate` (DateTime), `MonthlyRent` (decimal, copied from `Unit.MonthlyRent` at lease signing), `CreatedAt` (DateTime), `ManagerNotes` (string, nullable).
+- `Review`: `Id` (int PK), `ApplicationID` (int FK), `UserID` (string FK), `ReviewDate` (DateTime), `OutcomeApplicationStatusID` (int FK), `Comment` (string).
+- `ActionType`: `Id` (int PK), `Name` (string: `Submission`, `StartReview`, `CompleteReview`, `AddProperty`, `EditProperty`, `RemoveProperty`, `AddApplication`, etc.).
+- `ActionHistory`: `Id` (int PK), `ActionTypeID` (int FK), `UserID` (string FK), `Date` (DateTime), `ApplicationID` (int, nullable FK), `UnitID` (int, nullable FK), `PropertyID` (int, nullable FK), `FromStatus` (string), `ToStatus` (string), `FromObject` (string JSON), `ToObject` (string JSON).
 
 #### ViewModels & DTOs
 - `ReviewModalViewModel`: `ApplicationID`, `OutcomeStatusID`, `Comment` (Required if Return/Deny), `AvailableOutcomes` (SelectList: Approved, Returned, Denied).
-- `StatusHistoryItemViewModel`: `ReviewDate`, `ReviewerName`, `FromStatusName`, `ToStatusName`, `Comment`.
+- `StatusHistoryItemViewModel`: `ReviewDate`, `ReviewerName`, `FromStatusName`, `ToStatusName`, `Comment`, `ActionTypeName`.
 
 ### 5. Controllers & UI / Razor Components
 - `ReviewController`: `ReviewModal` (GET partial), `CompleteReview` (POST action with lease creation logic).
@@ -250,12 +285,12 @@ Build the Property Manager review modal (`Approve`, `Return`, `Deny`), status tr
 - Views & Modals: `Views/Review/_ReviewModal.cshtml`.
 
 ### 6. Required Tests & Assertions
-- **Unit Tests**:
-  - `ReviewWorkflowTests`: Assert `CompleteReview` fails model validation if outcome is `Return` or `Deny` and `Comment` is empty.
-  - `LeaseGenerationTests`: Assert `Approve` outcome creates a `Lease` record with exact 12-month duration (`EndDate == StartDate.AddMonths(12)`).
-- **Integration Tests**:
-  - `DoubleLeasePreventionTests`: Assert approving an application for a unit that already has an active lease fails and returns an error message.
-  - `StatusTimelineTests`: Assert review actions create a `Review` history record displayed in the `StatusHistoryTimelineViewComponent`.
+- **Unit Tests (`ReviewWorkflowTests.cs`, `LeaseGenerationTests.cs`)**:
+  - Assert `CompleteReview` fails model validation if outcome is `Return` or `Deny` and `Comment` is empty.
+  - Assert `Approve` outcome creates a `Lease` record with exact 12-month duration (`EndDate == StartDate.AddMonths(12)`) and copies `Unit.MonthlyRent`.
+- **Integration Tests (`DoubleLeasePreventionTests.cs`, `StatusTimelineTests.cs`)**:
+  - Assert approving an application for a unit that already has an active lease fails and returns an error message.
+  - Assert review actions create `Review` and `ActionHistory` records displayed in the `StatusHistoryTimelineViewComponent`.
 
 ---
 
@@ -268,23 +303,24 @@ Implement idempotent database seeding using Bogus for .NET and execute the compl
 - **Automated Data Seeding**: On application startup, seed the database using Bogus with:
   - Roles: `Applicant`, `PropertyManager`.
   - Accounts: Default Property Manager (`manager@realestate.com`) and Applicant (`applicant@realestate.com`).
-  - Lookup Data: `UnitType` (Active and Inactive types), `ApplicationStatus` lookups.
-  - Domain Data: Properties, Units, Applications in **every status** (`Draft`, `Submitted`, `Returned`, `Approved`, `Denied`, `Withdrawn`), and active Leases.
-- **Idempotency**: Seeding script runs safely on every startup without creating duplicate records.
+  - Lookup Data: `UnitType` (Active and Inactive types), `ApplicationStatus` lookups (`Draft`, `Submitted`, `Returned`, `Approved`, `Denied`, `Withdrawn`, `Under Review`), `ActionType` lookups.
+  - Domain Data: Properties, Units, Applications in **EVERY status** (`Draft`, `Submitted`, `Returned`, `Approved`, `Denied`, `Withdrawn`), Residence Histories, and active Leases.
+- **Strict Idempotency**: Seeding script (`DbInitializer.cs`) runs safely on every startup without creating duplicate records or throwing unique constraint exceptions, guarded by explicit `.Any()`, `RoleExistsAsync`, and `FindByEmailAsync` checks.
 
 ### 3. Business Rules & Constraints
 - Seeding must use Bogus for realistic mock data generation.
 - Database must contain applications in every status upon initial seed.
+- Re-running `DbInitializer.InitializeAsync()` repeatedly MUST leave total row counts constant.
 
 ### 4. Models Needed
 - `DbInitializer` / `BogusDataSeeder`: C# static seeding utility utilizing `Bogus.Faker`.
 
 ### 5. Required Tests & Assertions
-- **Integration Suite**:
-  - `SeedingIdempotencyTests`: Run `DbInitializer.SeedAsync()` twice; assert total row counts for Properties, Units, and Users remain unchanged.
-  - `CoreRequirementCoverageTests`: Assert database contains at least one application for every `ApplicationStatus` (`Draft`, `Submitted`, `Returned`, `Approved`, `Denied`, `Withdrawn`).
+- **Integration Suite (`SeedingIdempotencyTests.cs`, `CoreRequirementCoverageTests.cs`)**:
+  - Run `DbInitializer.InitializeAsync()` twice in succession; assert total row counts for Properties, Units, Users, Applications, and Leases remain unchanged and 0 exceptions are thrown.
+  - Assert database contains at least one application for every `ApplicationStatus` (`Draft`, `Submitted`, `Returned`, `Approved`, `Denied`, `Withdrawn`).
 
-> **MILESTONE VERIFICATION**: At v0.6, all non-bonus functional and technical requirements of the assessment are 100% complete, fully functional, and verified by unit/integration tests.
+> **CORE MILESTONE VERIFICATION**: At v0.6, all non-bonus functional and technical requirements of the assessment are 100% complete, fully functional, and verified by unit/integration tests.
 
 ---
 
@@ -315,10 +351,10 @@ Implement Property Manager Notes across entities with strict DTO security isolat
 - UI Extensions: `_ManagerNotesPartial.cshtml` rendered only inside Property Manager views.
 
 ### 6. Required Tests & Assertions
-- **Security Unit Tests**:
-  - `ManagerNotesSecurityTests`: Inspect all `Applicant` ViewModels via reflection and assert `ManagerNotes` property is completely absent.
-- **Unit Tests**:
-  - `DraftSoftValidationTests`: Assert section saves to DB with invalid email format when in Draft status, but Summary page flags error and disables Submit button.
+- **Security Unit Tests (`ManagerNotesSecurityTests.cs`)**:
+  - Inspect all `Applicant` ViewModels via reflection and assert `ManagerNotes` property is completely absent.
+- **Unit Tests (`DraftSoftValidationTests.cs`)**:
+  - Assert section saves to DB with invalid email format when in Draft status, but Summary page flags error and disables Submit button.
 
 ---
 
@@ -346,9 +382,9 @@ Implement database paging/sorting for the Application List extracted into a reus
 - `ReviewQueueController`: `Claim` (POST), `Release` (POST).
 
 ### 6. Required Tests & Assertions
-- **Unit & Integration Tests**:
-  - `PagedGridSqlTests`: Assert generated SQL contains `OFFSET` and `FETCH NEXT` clauses.
-  - `ReviewQueueConcurrencyTests`: Assert claiming an already claimed application by a second manager returns HTTP 409 Conflict.
+- **Unit & Integration Tests (`PagedGridSqlTests.cs`, `ReviewQueueConcurrencyTests.cs`)**:
+  - Assert generated SQL contains `OFFSET` and `FETCH NEXT` clauses.
+  - Assert claiming an already claimed application by a second manager returns HTTP 409 Conflict.
 
 ---
 
@@ -363,12 +399,13 @@ Implement multi-applicant support per application via email invitations (Bonus #
 
 ### 3. Business Rules & Constraints
 - Section saves enforce EF Core `[Timestamp]` / `RowVersion` concurrency checks.
-- Ownership checks verify current user is linked to the application via `ApplicationApplicant` junction entity.
+- Ownership checks verify current user is linked to the application via `ApplicationApplicant` / `ApplicantsXRef` junction entity.
 
 ### 4. Models Needed
 #### Entity Framework Core Entities
-- `ApplicationApplicant` (Junction): `Id` (int), `ApplicationID` (int FK), `ApplicantID` (int FK), `IsPrimary` (bool), `InvitationEmail` (string).
+- `ApplicationApplicant` / `ApplicantsXRef` (Junction): `Id` (int PK), `ApplicationID` (int FK), `ApplicantID` (int FK), `IsPrimary` (bool), `InvitationEmail` (string).
 - Entity modification to `Application`: Add `byte[] RowVersion` concurrency token (`[Timestamp]`).
+- All existing entities: `Property`, `Unit`, `UnitType`, `Lease`, `Application`, `Applicant`, `ApplicantsXRef`, `ResidenceHistory`, `ApplicationStatus`, `Review`, `ActionType`, `ActionHistory`.
 
 #### ViewModels & DTOs
 - `InviteCoApplicantViewModel`: `ApplicationID`, `CoApplicantEmail`.
@@ -378,8 +415,16 @@ Implement multi-applicant support per application via email invitations (Bonus #
 - Modals: `Views/CoApplicant/_InviteModal.cshtml`.
 
 ### 6. Required Tests & Assertions
-- **Unit & Integration Tests**:
-  - `OptimisticConcurrencyTests`: Simulate two simultaneous section saves with identical `RowVersion`; assert second save throws `DbUpdateConcurrencyException` and returns a HTTP 409 stale data reload message.
-  - `MultiApplicantAccessTests`: Assert both primary and co-applicant can view and edit the application wizard sections.
+- **Unit & Integration Tests (`OptimisticConcurrencyTests.cs`, `MultiApplicantAccessTests.cs`)**:
+  - Simulate two simultaneous section saves with identical `RowVersion`; assert second save throws `DbUpdateConcurrencyException` and returns a HTTP 409 stale data reload message.
+  - Assert both primary and co-applicant can view and edit the application wizard sections.
 
 ---
+
+## Final Verification Checklist for GitHub Coding Agent
+
+1. **`dotnet build`**: 0 Errors, 0 Warnings across all solution projects.
+2. **`dotnet test`**: 100% pass rate across Unit and Integration test suites.
+3. **Database Migrations**: `dotnet ef database update` executes cleanly on fresh SQL Server instance.
+4. **Idempotent Seeding**: Run app twice in succession; verify database row counts remain completely stable without duplicate records or primary key exceptions.
+5. **Security Audit**: Verify `[Authorize(Roles = "PropertyManager")]` on all management/review endpoints and `ManagerNotes` completely omitted from applicant views.
