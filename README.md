@@ -91,3 +91,63 @@ Run tests with verbose output
   + This is handled in the `DbInitializer.cs` file.
 + If you need to reset the database and reseed it, you can run the sql script located in the `docs` folder. 
   +This script will clear the database without clearing the users
+
+
+## Open Question for Clients / Team decisions for this release
+ ### Client Relationship and Priorities
+   **** What is existing system we are replacing?  *****
+       -  what currently works?
+	   -  work doesn't work
+	 - we can't assume that the design we were given answers the question of:
+	      - how do we know it is better?
+		  -  It must save the users time and/or money.  
+	-  what are project priorities?
+	  -  For this assessment, Assumed to be in this order:
+	   - Schedule (7 days), Compliance & Integrity, Feature Completeness, Quality, Security, Project Cost, Design/UX, Performance
+ ### Current questions for Prod release
+	- delete- recommend that all deletes are soft-deletes and can be undone
+    - db integrity
+		- there should be a unique key on Property+Unitname
+		- but only makes sense after soft-delete was implemented
+	- Home page	
+		menu ?
+	- Admin Role
+      - to create / disable / reset accounts
+	-  12 month lease doc template
+	   -  tool for creating legal docs
+	-  what are the possible Types ?
+       - allow managers to create types?
+	-  Branding, Logo, NAme, CSS styles
+	- property address seems to be missing ?
+	- In the bonus #3, which objects do we want manager notes to be seen on ?
+		Assume on Application, Lease, Property, Unit
+	- In bonus #5, "Ownership checks" - does this mean "application checks"  ?
+	- In bonus #5, we would need a way for an applicant to enter email address of the other applicant
+		- for security, sharing an application would be by invitation only, and they would have to know the email address
+    - No income data required, or income verification 
+    - could there be more than one company in future?
+	 
+## Prod System and Deploy Questions  
+    - for prod, we must turn off th auto db bogus data seeding
+		- it should be off by default, and moved to the readme file for developer manual seeding as needed.
+    - server deployment options
+	- existing Azure instance?
+	- note only tested on Windows 11 Pro
+	- database to choose ?
+    - Integration with existing website - button access
+    - Existing data upload process 
+		- how many current units?
+		- what is existing system?
+	- User Identity / email confirm enable
+
+## Future Features Discussion  
+    - about page with versioning, help, and how to contact someone for help
+	- Income data for applicants 
+	    - Applicant upload income verification docs  - security a much bigger concern then...
+		- outsource or not store it -  or need security discussion
+	- Lease generation and signature process
+	- Renewals 
+    - More detailed review process steps
+	   - check previous landlords
+	   - call / check history per previous address
+	- sort Product features into future versions Product plan
